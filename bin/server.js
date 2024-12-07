@@ -23,15 +23,18 @@ const wss = new WebSocketServer({ noServer: true });
  */
 const topics = new Map();
 
-const allowedOrigin = process.env.ALLOWED_ORIGIN || "http://localhost:3000";
-console.log("Allowed origin:", allowedOrigin);
+const allowedOrigins =
+  JSON.parse(process.env.ALLOWED_ORIGIN) || "http://localhost:3000";
+console.log("Allowed origin:", typeof allowedOrigins, allowedOrigins);
 
 const server = http.createServer((request, response) => {
   // response.writeHead(200, { 'Content-Type': 'text/plain' })
   // response.end('okay')
 
-  // Allow CORS
-  response.setHeader("Access-Control-Allow-Origin", allowedOrigin);
+  // Allow CORS from multiple origins
+  if (allowedOrigins.includes(request.headers.origin)) {
+    response.setHeader("Access-Control-Allow-Origin", request.headers.origin);
+  }
   response.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   response.setHeader(
     "Access-Control-Allow-Headers",
@@ -159,7 +162,7 @@ server.on("upgrade", (request, socket, head) => {
    */
   const handleAuth = (ws) => {
     // check that request came from scat.matte.codes
-    if (request.headers.origin !== allowedOrigin) {
+    if (!allowedOrigins.includes(request.headers.origin)) {
       console.info("Unauthorized request from", request.headers.origin);
       ws.close();
       return;
